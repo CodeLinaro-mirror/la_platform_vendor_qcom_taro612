@@ -4,7 +4,8 @@
 #
 # TODO(b/124534788): Temporarily allow eng and debug LOCAL_MODULE_TAGS
 
-BOARD_SYSTEMSDK_VERSIONS := 32
+BUILD_BROKEN_MISSING_REQUIRED_MODULES  := true
+ALLOW_MISSING_DEPENDENCIES := true
 
 TARGET_ARCH := arm64
 TARGET_ARCH_VARIANT := armv8-a-branchprot
@@ -12,22 +13,23 @@ TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_ABI2 :=
 TARGET_CPU_VARIANT := kryo300
 
-TARGET_2ND_ARCH := arm
-TARGET_2ND_ARCH_VARIANT := armv8-2a
-TARGET_2ND_CPU_ABI := armeabi-v7a
-TARGET_2ND_CPU_ABI2 := armeabi
-TARGET_2ND_CPU_VARIANT := cortex-a75
-
 TARGET_NO_BOOTLOADER := false
 TARGET_USES_UEFI := true
 TARGET_USES_REMOTEPROC := true
 TARGET_NO_KERNEL := false
+TARGET_SIGNONLY_BOOTLOADER := true
+
+ifeq ($(TARGET_NO_KERNEL), true)
+BOARD_PREBUILT_BOOTIMAGE := device/qcom/taro612/boot.img
+BOOT_OS_VERSION = $(PLATFORM_VERSION_LAST_STABLE)
+BOOT_SECURITY_PATCH = $(PLATFORM_SECURITY_PATCH)
+endif
 
 BOARD_RAMDISK_USE_LZ4 := true
 
 -include $(QCPATH)/common/taro/BoardConfigVendor.mk
-
-SECTOOLS_SECURITY_PROFILE := $(QCPATH)/securemsm/security_profiles/waipio_tz_security_profile.xml $(QCPATH)/securemsm/security_profiles/fillmore_tz_security_profile.xml $(QCPATH)/securemsm/security_profiles/cape_tz_security_profile.xml
+USESECTOOLV2 := true
+SECTOOLS_SECURITY_PROFILE := $(QCPATH)/securemsm/security_profiles/waipio_tz_security_profile.xml $(QCPATH)/securemsm/security_profiles/fillmore_tz_security_profile.xml
 
 USE_OPENGL_RENDERER := true
 
@@ -52,16 +54,16 @@ ifeq ($(BOARD_KERNEL_SEPARATED_DTBO),true)
 endif
 BOARD_SUPER_PARTITION_GROUPS := qti_dynamic_partitions
 BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 6438256640
-BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := vendor vendor_dlkm odm
+BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := vendor vendor_dlkm system_dlkm odm
 BOARD_RECOVERYIMAGE_PARTITION_SIZE := 0x06400000
 
 TARGET_COPY_OUT_ODM := odm
 BOARD_ODMIMAGE_FILE_SYSTEM_TYPE := ext4
 ifeq ($(ENABLE_AB), true)
 ifeq ($(BOARD_AVB_ENABLE),true)
-AB_OTA_PARTITIONS ?= boot vendor_boot recovery vendor vendor_dlkm odm dtbo vbmeta
+AB_OTA_PARTITIONS ?= boot init_boot vendor_boot recovery vendor vendor_dlkm system_dlkm odm dtbo vbmeta
 else
-AB_OTA_PARTITIONS ?= boot vendor_boot recovery vendor vendor_dlkm odm dtbo
+AB_OTA_PARTITIONS ?= boot init_boot vendor_boot recovery vendor vendor_dlkm system_dlkm odm dtbo
 endif
 endif
 BOARD_EXT4_SHARE_DUP_BLOCKS := true
@@ -70,9 +72,9 @@ ifeq ($(ENABLE_AB), true)
 TARGET_NO_RECOVERY := true
 # Defines for enabling A/B builds
 AB_OTA_UPDATER := true
-TARGET_RECOVERY_FSTAB := device/qcom/taro/recovery.fstab
+TARGET_RECOVERY_FSTAB := device/qcom/taro612/recovery.fstab
 else
-TARGET_RECOVERY_FSTAB := device/qcom/taro/recovery_non_AB.fstab
+TARGET_RECOVERY_FSTAB := device/qcom/taro612/recovery_non_AB.fstab
 BOARD_CACHEIMAGE_PARTITION_SIZE := 268435456
 BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
 endif
@@ -83,9 +85,6 @@ ifeq ($(BOARD_AVB_ENABLE), true)
     BOARD_AVB_RECOVERY_ROLLBACK_INDEX := 1
     BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION := 1
 endif
-
-
-BOARD_USES_METADATA_PARTITION := true
 
 #Enable compilation of oem-extensions to recovery
 #These need to be explicitly
@@ -100,28 +99,45 @@ BOARD_USES_VENDOR_DLKMIMAGE := true
 TARGET_COPY_OUT_VENDOR_DLKM := vendor_dlkm
 BOARD_VENDOR_DLKMIMAGE_FILE_SYSTEM_TYPE := ext4
 
+# Enable compilation of system_dlkm image
+BOARD_USES_SYSTEM_DLKMIMAGE := true
+TARGET_COPY_OUT_SYSTEM_DLKM := system_dlkm
+BOARD_SYSTEM_DLKMIMAGE_FILE_SYSTEM_TYPE := ext4
+
+BOARD_USES_METADATA_PARTITION := true
+BOARD_METADATAIMAGE_FILE_SYSTEM_TYPE := f2fs
+BOARD_METADATAIMAGE_PARTITION_SIZE := 67108864
+
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_USERDATAIMAGE_FILE_SYSTEM_TYPE := f2fs
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0x06000000
 BOARD_KERNEL-GKI_BOOTIMAGE_PARTITION_SIZE := $(BOARD_BOOTIMAGE_PARTITION_SIZE)
+BOARD_INIT_BOOT_IMAGE_PARTITION_SIZE := 0x00800000
 BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE := 0x06000000
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 48318382080
 BOARD_PERSISTIMAGE_PARTITION_SIZE := 33554432
 BOARD_PERSISTIMAGE_FILE_SYSTEM_TYPE := ext4
-BOARD_METADATAIMAGE_PARTITION_SIZE := 16777216
 BOARD_DTBOIMG_PARTITION_SIZE := 0x1700000
 BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
 BOARD_FLASH_BLOCK_SIZE := 131072 # (BOARD_KERNEL_PAGESIZE * 64)
 
 # Use sha256 for dm-verity partitions
+BOARD_AVB_SYSTEM_DLKM_ADD_HASHTREE_FOOTER_ARGS += --hash_algorithm sha256
 BOARD_AVB_VENDOR_ADD_HASHTREE_FOOTER_ARGS += --hash_algorithm sha256
 BOARD_AVB_VENDOR_DLKM_ADD_HASHTREE_FOOTER_ARGS += --hash_algorithm sha256
 BOARD_AVB_ODM_ADD_HASHTREE_FOOTER_ARGS += --hash_algorithm sha256
 
+# Enable chained vbmeta for boot images
+BOARD_AVB_BOOT_KEY_PATH := external/avb/test/data/testkey_rsa4096.pem
+BOARD_AVB_BOOT_ALGORITHM := SHA256_RSA4096
+BOARD_AVB_BOOT_ROLLBACK_INDEX := $(PLATFORM_SECURITY_PATCH_TIMESTAMP)
+BOARD_AVB_BOOT_ROLLBACK_INDEX_LOCATION := 3
+
 TARGET_USES_ION := true
 TARGET_USES_NEW_ION_API := true
+TARGET_USES_SMMU_PROXY := true
 
 BOARD_KERNEL_CMDLINE := video=vfb:640x400,bpp=32,memsize=3072000
 BOARD_BOOTCONFIG := androidboot.hardware=qcom androidboot.memcg=1 androidboot.usbcontroller=a600000.dwc3
@@ -137,6 +153,16 @@ else
 ifeq ($(TARGET_CONSOLE_ENABLED),false)
 BOARD_KERNEL_CMDLINE += msm_geni_serial.con_enabled=0
 endif
+endif
+
+#Enabling QSPA
+BOARD_BOOTCONFIG += androidboot.vendor.qspa=true
+
+BOARD_KERNEL_CMDLINE += $(file < device/qcom/$(TARGET_BOARD_PLATFORM)-kernel/extra_cmdline)
+BOARD_BOOTCONFIG += $(file < device/qcom/$(TARGET_BOARD_PLATFORM)-kernel/extra_bootconfig)
+
+ifneq ($(findstring kasan,$(file < device/qcom/$(TARGET_BOARD_PLATFORM)-kernel/build_opts.txt)),)
+BOARD_KERNEL_CMDLINE += panic_on_taint=0x0 kasan_multi_shot stack_depot_disable=off page_owner=on
 endif
 
 BOARD_KERNEL_BASE        := 0x00000000
@@ -168,6 +194,10 @@ TARGET_COMPILE_WITH_MSM_KERNEL := false
 BOARD_INCLUDE_DTB_IN_BOOTIMG := true
 BOARD_BOOT_HEADER_VERSION := 4
 BOARD_MKBOOTIMG_ARGS := --header_version $(BOARD_BOOT_HEADER_VERSION)
+
+# Specify init boot header version
+BOARD_INIT_BOOT_HEADER_VERSION := 4
+BOARD_MKBOOTIMG_INIT_ARGS += --header_version $(BOARD_INIT_BOOT_HEADER_VERSION)
 
 BOARD_EXCLUDE_KERNEL_FROM_RECOVERY_IMAGE := true
 BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
@@ -244,6 +274,5 @@ BUILD_BROKEN_NINJA_USES_ENV_VARS += SDCLANG_AE_CONFIG SDCLANG_CONFIG SDCLANG_SA_
 BUILD_BROKEN_USES_BUILD_HOST_SHARED_LIBRARY := true
 BUILD_BROKEN_USES_BUILD_HOST_STATIC_LIBRARY := true
 BUILD_BROKEN_USES_BUILD_HOST_EXECUTABLE := true
-BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 
 include device/qcom/sepolicy_vndr/SEPolicy.mk
