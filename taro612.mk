@@ -161,7 +161,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 endif
 
 ifeq ($(TARGET_USES_QMAA_OVERRIDE_USB), true)
-PRODUCT_PROPERTY_OVERRIDES += vendor.usb.use_gadget_hal=0
 PRODUCT_PROPERTY_OVERRIDES += persist.vendor.usb.config=adb
 endif
 ###########
