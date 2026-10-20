@@ -524,8 +524,9 @@ PRODUCT_PROPERTY_OVERRIDES += persist.sys.fuse.passthrough.enable=true
 # ODM ueventd.rc
 # - only for use with VM support right now
 ifeq ($(TARGET_ENABLE_VM_SUPPORT),true)
-PRODUCT_COPY_FILES += $(LOCAL_PATH)/ueventd-odm.rc:$(TARGET_COPY_OUT_ODM)/ueventd.rc
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/ueventd-odm.rc:$(TARGET_COPY_OUT_ODM)/etc/ueventd.rc
 PRODUCT_PACKAGES += vmmgr vmmgr.rc vmmgr.conf
+PRODUCT_COPY_FILES += $(LOCAL_PATH)/qvirtmgr.json:$(TARGET_COPY_OUT_VENDOR)/etc/qvirtmgr-vndr.json
 endif
 
 #qspa service
