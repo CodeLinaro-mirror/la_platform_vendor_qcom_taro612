@@ -529,11 +529,6 @@ PRODUCT_PACKAGES += vmmgr vmmgr.rc vmmgr.conf
 PRODUCT_COPY_FILES += $(LOCAL_PATH)/qvirtmgr.json:$(TARGET_COPY_OUT_VENDOR)/etc/qvirtmgr-vndr.json
 endif
 
-#qspa service
-PRODUCT_PACKAGES += vendor.qti.qspa-service qspa-testclient
-
-PRODUCT_PACKAGES += qspa_vendor.rc
-
 ##Armv9-Tests##
 PRODUCT_PACKAGES_DEBUG += bti_test_prebuilt \
                           pac_test \
